@@ -5,53 +5,64 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <meta name="theme-color" content="#10251d">
-  <title>Controller Pemain | Ziezaverse</title>
+  <title>Controller | Ular Tangga Ziezaverse</title>
+
+  <script src="https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js"></script>
 
   <style>
-    * {
-      box-sizing: border-box;
+    :root {
+      color-scheme: dark;
+      --bg: #10251d;
+      --panel: #1b3428;
+      --green: #b9e6a5;
+      --text: #f5f5e9;
+      --muted: #c8d8cb;
+      --border: #42604d;
+      --red: #ffd5d5;
     }
+
+    * { box-sizing: border-box; }
 
     body {
       margin: 0;
       min-height: 100vh;
-      padding: 24px 16px;
+      padding: 22px 14px;
       display: flex;
       align-items: center;
       justify-content: center;
-      background: #10251d;
-      color: #f5f5e9;
+      background: var(--bg);
+      color: var(--text);
       font-family: Arial, Helvetica, sans-serif;
     }
 
     .container {
       width: 100%;
-      max-width: 440px;
-      padding: 25px;
-      border: 1px solid #42604d;
+      max-width: 460px;
+      padding: 24px;
+      border: 1px solid var(--border);
       border-radius: 22px;
-      background: #1b3428;
+      background: var(--panel);
       box-shadow: 0 15px 45px #0005;
     }
 
     .brand {
       margin: 0 0 8px;
-      color: #b9e6a5;
-      font-size: 13px;
+      color: var(--green);
+      font-size: 12px;
       font-weight: bold;
-      letter-spacing: 3px;
+      letter-spacing: 4px;
       text-align: center;
     }
 
     h1 {
-      margin: 0 0 10px;
+      margin: 0;
       font-size: 27px;
       text-align: center;
     }
 
-    .description {
-      margin: 0 0 25px;
-      color: #c8d8cb;
+    .intro {
+      margin: 12px 0 22px;
+      color: var(--muted);
       font-size: 14px;
       line-height: 1.6;
       text-align: center;
@@ -59,79 +70,120 @@
 
     label {
       display: block;
-      margin: 16px 0 8px;
+      margin: 17px 0 8px;
       font-size: 13px;
       font-weight: bold;
     }
 
     input {
+      display: block;
       width: 100%;
-      padding: 14px;
+      min-height: 48px;
+      padding: 13px;
       border: 1px solid #587563;
       border-radius: 11px;
       outline: none;
-      background: #10251d;
+      background: var(--bg);
       color: white;
       font-size: 16px;
     }
 
     input:focus {
-      border-color: #b9e6a5;
+      border-color: var(--green);
     }
 
     button {
       width: 100%;
-      margin-top: 20px;
-      padding: 15px;
-      border: none;
+      min-height: 47px;
+      margin-top: 13px;
+      padding: 13px;
+      border: 0;
       border-radius: 11px;
-      background: #b9e6a5;
-      color: #10251d;
-      font-size: 15px;
+      background: var(--green);
+      color: var(--bg);
+      font-size: 14px;
       font-weight: bold;
       cursor: pointer;
     }
 
-    button:disabled {
-      cursor: wait;
-      opacity: 0.65;
+    button.secondary {
+      border: 1px solid #6c8a74;
+      background: #294735;
+      color: white;
     }
 
-    .hidden {
-      display: none !important;
+    button:disabled {
+      cursor: not-allowed;
+      opacity: .6;
     }
+
+    .hidden { display: none !important; }
 
     .notice {
-      margin-top: 16px;
+      margin-top: 15px;
       padding: 13px;
-      border: 1px solid #42604d;
+      border: 1px solid var(--border);
       border-radius: 11px;
-      background: #10251d;
-      color: #dbe8dc;
+      background: var(--bg);
       font-size: 13px;
       line-height: 1.6;
       overflow-wrap: anywhere;
     }
 
     .error {
-      border-color: #b85c5c;
-      background: #3a2020;
-      color: #ffd5d5;
+      border-color: #a95353;
+      color: var(--red);
     }
 
-    .room-code {
-      margin: 12px 0;
-      color: #b9e6a5;
-      font-size: 32px;
-      font-weight: bold;
-      letter-spacing: 5px;
-      text-align: center;
-    }
+    .success { color: var(--green); }
 
     .small {
       color: #a9c0ad;
       font-size: 12px;
       line-height: 1.6;
+    }
+
+    .room-code {
+      margin: 8px 0;
+      color: var(--green);
+      font-size: 31px;
+      font-weight: bold;
+      letter-spacing: 5px;
+      text-align: center;
+    }
+
+    #qr-reader {
+      width: 100%;
+      margin-top: 14px;
+      overflow: hidden;
+      border-radius: 12px;
+      background: #fff;
+    }
+
+    #qr-reader video {
+      border-radius: 10px;
+    }
+
+    .divider {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      margin: 19px 0 4px;
+      color: #a9c0ad;
+      font-size: 12px;
+    }
+
+    .divider::before,
+    .divider::after {
+      content: "";
+      flex: 1;
+      height: 1px;
+      background: var(--border);
+    }
+
+    @media (max-width: 360px) {
+      .container { padding: 18px; }
+      h1 { font-size: 23px; }
     }
   </style>
 </head>
@@ -140,8 +192,9 @@
   <main class="container">
     <p class="brand">ZIEZAVERSE</p>
     <h1>Controller Pemain</h1>
-    <p class="description">
-      Masukkan nama dan kode room untuk bergabung ke permainan Ular Tangga.
+    <p class="intro">
+      Masuk ke room Ular Tangga bersama teman-temanmu.
+      Scan QR dari laptop atau masukkan kode room secara manual.
     </p>
 
     <section id="join-panel">
@@ -150,7 +203,7 @@
         id="name-input"
         type="text"
         maxlength="12"
-        placeholder="Masukkan nama kamu"
+        placeholder="Contoh: Zah"
         autocomplete="nickname"
       >
 
@@ -164,42 +217,67 @@
         autocapitalize="characters"
       >
 
+      <button id="scan-btn" type="button">
+        📷 SCAN QR DARI KAMERA
+      </button>
+
+      <div id="qr-reader" class="hidden"></div>
+      <p id="scan-status" class="small" aria-live="polite"></p>
+
+      <button
+        id="stop-scan-btn"
+        class="secondary hidden"
+        type="button"
+      >
+        TUTUP KAMERA
+      </button>
+
+      <div class="divider">ATAU</div>
+
       <button id="join-btn" type="button">
         GABUNG ROOM
       </button>
 
-      <div id="error" class="notice error hidden" role="alert"></div>
+      <div
+        id="error"
+        class="notice error hidden"
+        role="alert"
+        aria-live="assertive"
+      ></div>
     </section>
 
     <section id="connected-panel" class="hidden">
       <div class="notice">
         <strong>Status koneksi</strong>
-        <p id="connection-status">Menghubungkan...</p>
+        <p id="connection-status" class="success">
+          Terhubung ke room
+        </p>
       </div>
 
-      <p class="small">Kode room kamu:</p>
+      <p class="small">Kode room:</p>
       <div id="joined-room" class="room-code"></div>
 
       <div class="notice">
         <strong>Status permainan</strong>
-        <p id="game-status">
-          Menunggu host memulai permainan.
-        </p>
+        <p id="game-status">Menunggu host.</p>
       </div>
 
       <p class="small">
-        Biarkan halaman ini tetap terbuka selama bermain.
+        Biarkan halaman tetap terbuka selama permainan.
       </p>
     </section>
 
     <p class="small" style="text-align:center; margin-top:24px;">
-      Ziezaverse · Ular Tangga Multiplayer
+      Ular Tangga Multiplayer · Ziezaverse
     </p>
   </main>
 
   <script type="module">
-    import { initializeApp, getApp, getApps }
-      from "https://www.gstatic.com/firebasejs/11.10.0/firebase-app.js";
+    import {
+      initializeApp,
+      getApps,
+      getApp
+    } from "https://www.gstatic.com/firebasejs/11.10.0/firebase-app.js";
 
     import {
       getAuth,
@@ -219,178 +297,312 @@
     import { firebaseConfig } from "./firebase-config.js";
 
     const $ = (id) => document.getElementById(id);
+    const MAX_PLAYERS = 4;
 
-    const params = new URLSearchParams(window.location.search);
-    const initialRoom = (params.get("room") || "")
+    const params = new URLSearchParams(location.search);
+    const roomFromUrl = (params.get("room") || "")
       .toUpperCase()
       .replace(/[^A-Z0-9]/g, "")
       .slice(0, 6);
 
-    if (initialRoom) {
-      $("room-input").value = initialRoom;
+    if (roomFromUrl) {
+      $("room-input").value = roomFromUrl;
     }
 
-    const MAX_PLAYERS = 4;
-
+    let app;
+    let auth;
+    let db;
+    let qrScanner = null;
+    let scanning = false;
+    let joining = false;
     let roomListener = null;
     let joinedPlayerRef = null;
-    let connectedUid = null;
-    let joining = false;
+    let joinedRoomCode = null;
 
     function showError(message) {
       $("error").textContent = message;
       $("error").classList.remove("hidden");
     }
 
-    function hideError() {
+    function clearError() {
       $("error").textContent = "";
       $("error").classList.add("hidden");
     }
 
-    function isConfigured() {
+    function firebaseConfigured() {
       return Boolean(
         firebaseConfig &&
         firebaseConfig.apiKey &&
-        !firebaseConfig.apiKey.includes("GANTI_") &&
         firebaseConfig.projectId &&
-        !firebaseConfig.projectId.includes("GANTI_") &&
         firebaseConfig.databaseURL &&
+        !firebaseConfig.apiKey.includes("GANTI_") &&
+        !firebaseConfig.projectId.includes("GANTI_") &&
         !firebaseConfig.databaseURL.includes("GANTI_")
       );
     }
 
-    $("room-input").addEventListener("input", () => {
-      $("room-input").value = $("room-input").value
+    function normalizeRoom(value) {
+      return String(value || "")
+        .trim()
         .toUpperCase()
-        .replace(/[^A-Z0-9]/g, "")
-        .slice(0, 6);
+        .replace(/[^A-Z0-9]/g, "");
+    }
+
+    $("room-input").addEventListener("input", () => {
+      $("room-input").value =
+        normalizeRoom($("room-input").value).slice(0, 6);
     });
 
     $("name-input").addEventListener("input", () => {
       $("name-input").value = $("name-input").value
         .replace(/[<>]/g, "")
+        .replace(/\s+/g, " ")
         .slice(0, 12);
     });
 
-    $("join-btn").addEventListener("click", async () => {
+    function extractRoomFromQr(decodedText) {
+      const text = String(decodedText || "").trim();
+
+      try {
+        const url = new URL(text);
+        const roomParam = url.searchParams.get("room");
+
+        if (roomParam) {
+          return normalizeRoom(roomParam);
+        }
+
+        // Terima URL controller yang memuat kode sebagai fragmen.
+        const fragment = new URLSearchParams(
+          url.hash.replace(/^#/, "")
+        ).get("room");
+
+        if (fragment) {
+          return normalizeRoom(fragment);
+        }
+      } catch {
+        // QR boleh berisi kode room langsung, bukan URL.
+      }
+
+      return normalizeRoom(text);
+    }
+
+    async function stopScanner() {
+      if (!qrScanner || !scanning) {
+        $("qr-reader").classList.add("hidden");
+        $("stop-scan-btn").classList.add("hidden");
+        return;
+      }
+
+      try {
+        await qrScanner.stop();
+      } catch (error) {
+        console.warn("Kamera sudah berhenti atau tidak aktif:", error);
+      }
+
+      try {
+        await qrScanner.clear();
+      } catch (error) {
+        console.warn("Tidak perlu membersihkan pemindai:", error);
+      }
+
+      scanning = false;
+      qrScanner = null;
+
+      $("qr-reader").classList.add("hidden");
+      $("stop-scan-btn").classList.add("hidden");
+    }
+
+    async function startScanner() {
+      clearError();
+
+      if (scanning) return;
+
+      if (!window.isSecureContext) {
+        $("scan-status").textContent =
+          "Kamera membutuhkan halaman HTTPS. Buka link GitHub Pages.";
+        return;
+      }
+
+      if (typeof window.Html5Qrcode === "undefined") {
+        $("scan-status").textContent =
+          "Library pemindai QR gagal dimuat. Periksa internet dan muat ulang halaman.";
+        return;
+      }
+
+      $("qr-reader").classList.remove("hidden");
+      $("stop-scan-btn").classList.remove("hidden");
+      $("scan-status").textContent =
+        "Meminta izin kamera. Pilih Izinkan jika diminta.";
+
+      try {
+        qrScanner = new window.Html5Qrcode("qr-reader");
+
+        await qrScanner.start(
+          { facingMode: "environment" },
+          {
+            fps: 10,
+            qrbox: { width: 220, height: 220 },
+            aspectRatio: 1
+          },
+          async (decodedText) => {
+            const room = extractRoomFromQr(decodedText);
+
+            if (!/^[A-Z0-9]{6}$/.test(room)) {
+              $("scan-status").textContent =
+                "QR terbaca, tetapi bukan kode room 6 karakter. Arahkan ke QR dari laptop.";
+              return;
+            }
+
+            $("room-input").value = room;
+            $("scan-status").textContent =
+              "QR berhasil dibaca. Kode room: " + room;
+
+            await stopScanner();
+            $("name-input").focus();
+          },
+          () => {
+            // Pemindai memeriksa banyak frame; abaikan frame tanpa QR.
+          }
+        );
+
+        scanning = true;
+        $("scan-status").textContent =
+          "Kamera aktif. Arahkan ke QR room yang tampil di laptop.";
+      } catch (error) {
+        console.error("KESALAHAN KAMERA:", error);
+
+        qrScanner = null;
+        scanning = false;
+
+        $("qr-reader").classList.add("hidden");
+        $("stop-scan-btn").classList.add("hidden");
+
+        if (error?.name === "NotAllowedError") {
+          $("scan-status").textContent =
+            "Izin kamera ditolak. Izinkan kamera di pengaturan browser lalu coba lagi.";
+        } else if (error?.name === "NotFoundError") {
+          $("scan-status").textContent =
+            "Kamera tidak ditemukan pada perangkat ini.";
+        } else {
+          $("scan-status").textContent =
+            "Kamera gagal dibuka. Pastikan halaman memakai HTTPS dan izin kamera aktif.";
+        }
+      }
+    }
+
+    $("scan-btn").addEventListener("click", startScanner);
+    $("stop-scan-btn").addEventListener("click", stopScanner);
+
+    async function getFirebaseServices() {
+      if (!firebaseConfigured()) {
+        throw new Error(
+          "Konfigurasi Firebase belum lengkap. Periksa firebase-config.js."
+        );
+      }
+
+      if (!app) {
+        app = getApps().length ? getApp() : initializeApp(firebaseConfig);
+        auth = getAuth(app);
+        db = getDatabase(app);
+      }
+
+      if (!auth.currentUser) {
+        await signInAnonymously(auth);
+      }
+
+      return {
+        user: auth.currentUser,
+        database: db
+      };
+    }
+
+    async function joinRoom() {
       if (joining) return;
 
-      hideError();
+      clearError();
 
-      const room = $("room-input").value.trim().toUpperCase();
+      const room = normalizeRoom($("room-input").value);
       const name = $("name-input").value.trim().replace(/\s+/g, " ");
 
       if (!/^[A-Z0-9]{6}$/.test(room)) {
         showError(
-          "Kode room harus terdiri dari 6 huruf atau angka. Scan QR room lagi."
+          "Kode room harus tepat 6 huruf atau angka. Scan QR atau masukkan kode dengan benar."
         );
         return;
       }
 
       if (!name) {
-        showError("Isi nama pemain terlebih dahulu.");
+        showError("Masukkan nama pemain terlebih dahulu.");
+        $("name-input").focus();
         return;
       }
 
-      if (!isConfigured()) {
-        showError(
-          "Konfigurasi Firebase belum lengkap. Periksa firebase-config.js."
-        );
+      if (name.length > 12) {
+        showError("Nama maksimal 12 karakter.");
         return;
       }
 
       joining = true;
       $("join-btn").disabled = true;
+      $("scan-btn").disabled = true;
       $("join-btn").textContent = "MENGHUBUNGKAN...";
 
       let playerRefForCleanup = null;
+      let registeredDisconnect = false;
 
       try {
-        /*
-         * Gunakan aplikasi Firebase yang sudah ada jika tersedia.
-         * Ini mencegah error duplicate-app saat mencoba kembali.
-         */
-        const app = getApps().length
-          ? getApp()
-          : initializeApp(firebaseConfig);
+        await stopScanner();
 
-        const auth = getAuth(app);
+        const { user, database } = await getFirebaseServices();
+        const roomRef = ref(database, `rooms/${room}`);
 
-        const credential = auth.currentUser
-          ? { user: auth.currentUser }
-          : await signInAnonymously(auth);
-
-        const user = credential.user;
-        connectedUid = user.uid;
-
-        const db = getDatabase(app);
-        const roomRef = ref(db, `rooms/${room}`);
-
-        /*
-         * Catat informasi diagnostik di Console browser.
-         */
-        console.log("ZIEZAVERSE DIAGNOSTIK", {
+        console.log("ZIEZAVERSE CONTROLLER", {
           room,
           projectId: firebaseConfig.projectId,
           databaseURL: firebaseConfig.databaseURL,
           roomPath: `rooms/${room}`,
-          userUid: user.uid
+          uid: user.uid
         });
 
-        /*
-         * Baca room dan tampilkan error asli jika akses database gagal.
-         */
-        const roomSnap = await get(roomRef);
+        const snapshot = await get(roomRef);
 
         console.log("HASIL PEMERIKSAAN ROOM", {
-          room,
-          exists: roomSnap.exists(),
-          data: roomSnap.exists() ? roomSnap.val() : null,
-          databaseURL: firebaseConfig.databaseURL,
-          roomReference: roomSnap.ref.toString()
+          exists: snapshot.exists(),
+          value: snapshot.exists() ? snapshot.val() : null,
+          roomReference: snapshot.ref.toString()
         });
 
-        if (!roomSnap.exists()) {
-          console.error("ROOM SNAPSHOT KOSONG", {
-            room,
-            databaseURL: firebaseConfig.databaseURL,
-            projectId: firebaseConfig.projectId,
-            roomPath: `rooms/${room}`
-          });
-
+        if (!snapshot.exists()) {
           throw new Error(
-            "Room tidak terbaca pada database yang digunakan controller. " +
-            "Pastikan host membuat room di database Firebase yang sama. " +
-            "Buka Console untuk melihat detail pemeriksaan."
+            "Room tidak ditemukan pada database ini. Pastikan host sudah membuat room dan kedua halaman menggunakan firebase-config.js yang sama."
           );
         }
 
-        const roomData = roomSnap.val() || {};
+        const initialData = snapshot.val() || {};
 
-        if (roomData.status !== "lobby") {
+        if (initialData.status !== "lobby") {
           throw new Error(
             "Room sudah dimulai atau ditutup. Minta host membuat room baru."
           );
         }
 
         playerRefForCleanup = ref(
-          db,
+          database,
           `rooms/${room}/players/${user.uid}`
         );
 
-        /*
-         * Batalkan pendaftaran onDisconnect lama bila ada.
-         * Jika koneksi terputus, pemain akan dihapus otomatis.
-         */
         await onDisconnect(playerRefForCleanup).remove();
+        registeredDisconnect = true;
 
         let joinFailure = "";
 
-        const tx = await runTransaction(
+        const transaction = await runTransaction(
           roomRef,
           (current) => {
+            joinFailure = "";
+
             if (!current) {
-              joinFailure = "Room tidak ditemukan saat proses bergabung.";
+              joinFailure = "Room tidak ditemukan saat bergabung.";
               return;
             }
 
@@ -400,19 +612,24 @@
             }
 
             const players =
-              current.players && typeof current.players === "object"
+              current.players &&
+              typeof current.players === "object"
                 ? current.players
                 : {};
 
-            const existing = players[user.uid];
+            const existingPlayer = players[user.uid];
 
             const activePlayers = Object.entries(players).filter(
               ([uid, player]) =>
-                uid !== user.uid && player && player.name
+                uid !== user.uid &&
+                player &&
+                typeof player.name === "string" &&
+                player.name.trim()
             );
 
-            if (!existing && activePlayers.length >= MAX_PLAYERS) {
-              joinFailure = "Room sudah penuh (maksimal 4 pemain).";
+            if (!existingPlayer && activePlayers.length >= MAX_PLAYERS) {
+              joinFailure =
+                "Room sudah penuh. Maksimal 4 pemain.";
               return;
             }
 
@@ -420,13 +637,13 @@
               ([uid, player]) =>
                 uid !== user.uid &&
                 player &&
-                String(player.name || "").trim().toLowerCase() ===
-                  name.toLowerCase()
+                typeof player.name === "string" &&
+                player.name.trim().toLowerCase() === name.toLowerCase()
             );
 
             if (duplicateName) {
               joinFailure =
-                "Nama itu sudah dipakai di room ini. Coba nama lain.";
+                "Nama sudah digunakan pemain lain. Gunakan nama berbeda.";
               return;
             }
 
@@ -436,7 +653,7 @@
                 ...players,
                 [user.uid]: {
                   name,
-                  joinedAt: existing?.joinedAt || Date.now(),
+                  joinedAt: existingPlayer?.joinedAt || Date.now(),
                   connected: true
                 }
               }
@@ -445,45 +662,49 @@
           { applyLocally: false }
         );
 
-        if (!tx.committed) {
+        if (!transaction.committed) {
           throw new Error(
-            joinFailure || "Gagal bergabung ke room. Coba lagi."
+            joinFailure || "Gagal bergabung. Silakan coba lagi."
           );
         }
 
         joinedPlayerRef = playerRefForCleanup;
+        joinedRoomCode = room;
 
         $("join-panel").classList.add("hidden");
         $("connected-panel").classList.remove("hidden");
-
         $("joined-room").textContent = room;
         $("connection-status").textContent = "Terhubung ke room";
-        $("connection-status").className = "";
 
         if (roomListener) {
           roomListener();
+          roomListener = null;
         }
 
         roomListener = onValue(
           roomRef,
-          (snapshot) => {
-            const data = snapshot.val();
+          (roomSnapshot) => {
+            const data = roomSnapshot.val();
 
             if (!data) {
               $("connection-status").textContent =
                 "Room tidak ditemukan atau telah dihapus.";
-
               $("game-status").textContent =
                 "Minta host membuat room baru.";
-
               return;
             }
 
-            $("connection-status").textContent = "Terhubung ke room";
+            const players =
+              data.players && typeof data.players === "object"
+                ? Object.values(data.players)
+                : [];
+
+            $("connection-status").textContent =
+              "Terhubung · " + players.length + " pemain terdaftar";
 
             if (data.status === "playing") {
               $("game-status").textContent =
-                "Game dimulai! Controller dadu dan jawaban akan aktif setelah fitur permainan dihubungkan.";
+                "Game telah dimulai. Halaman ini sudah terhubung, tetapi kontrol dadu dan jawaban perlu diintegrasikan dengan mekanisme game di halaman host.";
             } else if (data.status === "closed") {
               $("game-status").textContent =
                 "Host telah menutup room.";
@@ -493,68 +714,81 @@
             }
           },
           (error) => {
-            console.error("GAGAL MEMANTAU ROOM:", error);
-
+            console.error("KESALAHAN PEMANTAUAN ROOM:", error);
             $("connection-status").textContent =
-              "Koneksi bermasalah";
-
+              "Koneksi database bermasalah.";
             $("game-status").textContent =
-              "Database tidak dapat dipantau. Periksa Console browser.";
+              "Periksa internet dan Firebase Database Rules.";
           }
         );
 
-        console.log("BERHASIL BERGABUNG", {
-          room,
-          uid: connectedUid
-        });
+        console.log("BERHASIL BERGABUNG KE ROOM", room);
 
       } catch (error) {
-        console.error("KESALAHAN CONTROLLER:", error);
+        console.error("KESALAHAN BERGABUNG:", error);
 
         if (playerRefForCleanup) {
-          await remove(playerRefForCleanup).catch((cleanupError) => {
-            console.warn("Pembersihan pemain gagal:", cleanupError);
-          });
+          try {
+            await remove(playerRefForCleanup);
+          } catch (cleanupError) {
+            console.warn("Pembersihan data pemain gagal:", cleanupError);
+          }
         }
 
-        const message = String(error?.message || "");
+        if (registeredDisconnect && playerRefForCleanup) {
+          try {
+            await onDisconnect(playerRefForCleanup).cancel();
+          } catch (cancelError) {
+            console.warn("Pembatalan onDisconnect gagal:", cancelError);
+          }
+        }
+
+        const code = error?.code || "";
+        let message = error?.message || "Terjadi kesalahan yang tidak diketahui.";
 
         if (
-          error?.code === "PERMISSION_DENIED" ||
-          error?.code === "permission-denied"
+          code === "PERMISSION_DENIED" ||
+          code === "permission-denied" ||
+          code === "database/permission-denied"
         ) {
-          showError(
-            "Akses database ditolak. Periksa Rules Realtime Database " +
-            "dan pastikan pengguna sudah login anonim."
-          );
-        } else if (
-          error?.code === "auth/operation-not-allowed"
-        ) {
-          showError(
-            "Login anonim belum aktif. Aktifkan Anonymous pada Firebase Authentication."
-          );
-        } else if (
-          error?.code === "auth/network-request-failed"
-        ) {
-          showError(
-            "Koneksi internet bermasalah. Periksa internet lalu coba lagi."
-          );
-        } else {
-          showError(
-            message || "Gagal bergabung. Periksa koneksi dan konfigurasi Firebase."
-          );
+          message =
+            "Firebase menolak akses. Periksa Rules Realtime Database dan pastikan login anonim aktif.";
+        } else if (code === "auth/operation-not-allowed") {
+          message =
+            "Login anonim belum diaktifkan. Buka Firebase Authentication lalu aktifkan Anonymous.";
+        } else if (code === "auth/network-request-failed") {
+          message =
+            "Koneksi internet gagal. Periksa jaringan dan coba lagi.";
         }
+
+        showError(message);
 
       } finally {
         joining = false;
         $("join-btn").disabled = false;
+        $("scan-btn").disabled = false;
         $("join-btn").textContent = "COBA LAGI";
+      }
+    }
+
+    $("join-btn").addEventListener("click", joinRoom);
+
+    $("name-input").addEventListener("keydown", (event) => {
+      if (event.key === "Enter") {
+        $("room-input").focus();
+      }
+    });
+
+    $("room-input").addEventListener("keydown", (event) => {
+      if (event.key === "Enter") {
+        joinRoom();
       }
     });
 
     window.addEventListener("pagehide", () => {
       if (roomListener) {
         roomListener();
+        roomListener = null;
       }
     });
   </script>
