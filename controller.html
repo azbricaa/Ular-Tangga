@@ -1,0 +1,70 @@
+<!doctype html>
+<html lang="id"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"><meta name="theme-color" content="#4338ca"><title>Ziezaa Controller</title><script src="https://cdn.tailwindcss.com"></script></head>
+<body class="min-h-screen bg-gradient-to-br from-indigo-700 via-violet-700 to-fuchsia-700 text-slate-900 p-4 flex items-center justify-center">
+<main class="w-full max-w-md bg-white rounded-3xl p-6 shadow-2xl border-4 border-indigo-200">
+  <div class="text-center"><div class="text-5xl mb-2">🎮📱</div><h1 class="text-2xl font-black text-indigo-700">ZIEZAA CONTROLLER</h1><p class="text-sm text-slate-500 mt-1">Controller HP Ular Tangga Ziezaa</p></div>
+  <section id="join-panel" class="mt-6 space-y-4"><label class="block text-sm font-bold text-slate-700">Kode room<input id="room-input" maxlength="6" class="mt-1 w-full p-3 rounded-xl border-2 border-slate-200 uppercase tracking-widest text-center text-xl font-black" placeholder="ABC123"></label><label class="block text-sm font-bold text-slate-700">Nama pemain<input id="name-input" maxlength="12" class="mt-1 w-full p-3 rounded-xl border-2 border-slate-200" placeholder="Nama kamu"></label><button id="join-btn" class="w-full p-4 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white font-black shadow-lg">GABUNG ROOM</button></section>
+  <section id="connected-panel" class="hidden mt-6"><div id="connection-status" class="p-3 rounded-xl bg-emerald-50 border border-emerald-200 text-emerald-700 font-bold text-center">Terhubung!</div><div class="mt-4 bg-slate-50 p-4 rounded-2xl text-center"><div class="text-xs text-slate-500 font-bold">KODE ROOM</div><div id="joined-room" class="text-2xl font-black tracking-widest text-indigo-700"></div><div id="game-status" class="mt-3 text-sm text-slate-600">Kamu sudah masuk lobby. Tunggu host memulai permainan.</div></div><div class="mt-4 text-sm text-slate-500 text-center">Controller untuk dadu dan jawaban akan aktif setelah tahap lobby ini berhasil diuji.</div></section>
+  <p id="error" class="hidden mt-4 p-3 rounded-xl bg-rose-50 border border-rose-200 text-rose-700 text-sm font-bold"></p><p class="mt-5 text-[11px] leading-relaxed text-slate-400 text-center">Pastikan HP dan layar utama memakai tautan website yang sama. Koneksi internet diperlukan.</p>
+</main>
+<script type="module">
+import { initializeApp } from "https://www.gstatic.com/firebasejs/11.10.0/firebase-app.js";
+import { getAuth, signInAnonymously } from "https://www.gstatic.com/firebasejs/11.10.0/firebase-auth.js";
+import { getDatabase, ref, set, onValue, onDisconnect, remove, runTransaction } from "https://www.gstatic.com/firebasejs/11.10.0/firebase-database.js";
+import { firebaseConfig } from "./firebase-config.js";
+const $=id=>document.getElementById(id); const params=new URLSearchParams(location.search); const initialRoom=(params.get('room')||'').toUpperCase(); if(initialRoom) $('room-input').value=initialRoom;
+const MAX_PLAYERS=4; let roomListener=null, joinedPlayerRef=null, connectedUid=null;
+function error(msg){$('error').textContent=msg;$('error').classList.remove('hidden');}
+function isConfigured(){return Boolean(firebaseConfig?.apiKey&&!firebaseConfig.apiKey.includes('GANTI_')&&firebaseConfig?.projectId&&!firebaseConfig.projectId.includes('GANTI_')&&firebaseConfig?.databaseURL&&!firebaseConfig.databaseURL.includes('GANTI_'));}
+$('room-input').addEventListener('input',()=>{$('room-input').value=$('room-input').value.toUpperCase().replace(/[^A-Z0-9]/g,'').slice(0,6);});
+$('name-input').addEventListener('input',()=>{$('name-input').value=$('name-input').value.replace(/[<>]/g,'').slice(0,12);});
+$('join-btn').addEventListener('click', async()=>{
+  $('error').classList.add('hidden'); const room=$('room-input').value.trim().toUpperCase(); const name=$('name-input').value.trim().replace(/\s+/g,' ');
+  if(!/^[A-Z0-9]{6}$/.test(room)){error('Kode room harus 6 karakter. Scan QR lagi atau masukkan kodenya.');return;}
+  if(!name){error('Isi nama pemain terlebih dahulu.');return;}
+  if(!isConfigured()){error('Firebase belum disetel. Admin game harus mengisi firebase-config.js.');return;}
+  $('join-btn').disabled=true; $('join-btn').textContent='MENGHUBUNGKAN...';
+  try{
+    const app=initializeApp(firebaseConfig); const auth=getAuth(app);
+    const user=auth.currentUser || (await signInAnonymously(auth)).user; connectedUid=user.uid;
+    const db=getDatabase(app); const roomRef=ref(db,`rooms/${room}`);
+    const roomSnap=await new Promise((resolve,reject)=>{
+      let done=false; const unsub=onValue(roomRef,s=>{if(done)return;done=true;unsub();resolve(s);},e=>{if(done)return;done=true;reject(e);});
+    });
+    if(!roomSnap.exists()) throw new Error('Room tidak ditemukan. Minta host membuat room baru.');
+    const roomData=roomSnap.val()||{};
+    if(roomData.status!=='lobby') throw new Error('Room sudah dimulai atau ditutup. Minta host membuat room baru.');
+    joinedPlayerRef=ref(db,`rooms/${room}/players/${user.uid}`);
+    // Daftarkan pembersihan koneksi terlebih dahulu agar pemain tidak tertinggal jika HP putus.
+    await onDisconnect(joinedPlayerRef).remove();
+    let joinFailure='';
+    // Room status + roster diperbarui dalam satu transaksi untuk menghindari masuk saat host mulai game.
+    const tx=await runTransaction(roomRef,current=>{
+      if(!current){joinFailure='Room tidak ditemukan. Minta host membuat room baru.';return;}
+      if(current.status!=='lobby'){joinFailure='Room sudah dimulai atau ditutup. Minta host membuat room baru.';return;}
+      const players=current.players&&typeof current.players==='object'?current.players:{};
+      const existing=players[user.uid];
+      const active=Object.entries(players).filter(([uid,p])=>uid!==user.uid&&p&&p.name);
+      if(!existing&&active.length>=MAX_PLAYERS){joinFailure='Room sudah penuh (maksimal '+MAX_PLAYERS+' pemain).';return;}
+      const duplicate=Object.entries(players).some(([uid,p])=>uid!==user.uid&&p&&String(p.name||'').trim().toLocaleLowerCase()===name.toLocaleLowerCase());
+      if(duplicate){joinFailure='Nama itu sudah dipakai di room ini. Coba nama lain.';return;}
+      return {...current,players:{...players,[user.uid]:{name,joinedAt:existing?.joinedAt||Date.now(),connected:true}}};
+    },{applyLocally:false});
+    if(!tx.committed){await remove(joinedPlayerRef).catch(()=>{});throw new Error(joinFailure||'Gagal bergabung. Coba lagi.');}
+    $('join-panel').classList.add('hidden'); $('connected-panel').classList.remove('hidden'); $('joined-room').textContent=room;
+    $('connection-status').textContent='Terhubung ke room';
+    if(roomListener) roomListener();
+    roomListener=onValue(roomRef,s=>{
+      const data=s.val();
+      if(!data){$('connection-status').textContent='Room tidak ditemukan atau telah dihapus.';$('connection-status').className='p-3 rounded-xl bg-rose-50 border border-rose-200 text-rose-700 font-bold text-center';$('game-status').textContent='Minta host membuat room baru.';return;}
+      if(data.status==='playing') $('game-status').textContent='Game dimulai! Controller akan mengikuti tahap permainan yang tersedia.';
+      else if(data.status==='closed') $('game-status').textContent='Host telah menutup room.';
+      else $('game-status').textContent='Berhasil bergabung. Tunggu host memulai permainan.';
+    },e=>{console.error(e);$('connection-status').textContent='Koneksi bermasalah';$('game-status').textContent='Periksa internet. Jangan tekan gabung berulang kali; coba muat ulang jika tetap terputus.';});
+  }catch(e){
+    console.error(e);error(e.message||'Gagal bergabung. Periksa internet dan konfigurasi Firebase.');
+    $('join-btn').disabled=false;$('join-btn').textContent='COBA LAGI';
+  }
+});
+window.addEventListener('pagehide',()=>{if(roomListener)roomListener();});
+</script></body></html>
