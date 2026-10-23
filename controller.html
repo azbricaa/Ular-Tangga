@@ -1,70 +1,562 @@
-<!doctype html>
-<html lang="id"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"><meta name="theme-color" content="#4338ca"><title>Ziezaa Controller</title><script src="https://cdn.tailwindcss.com"></script></head>
-<body class="min-h-screen bg-gradient-to-br from-indigo-700 via-violet-700 to-fuchsia-700 text-slate-900 p-4 flex items-center justify-center">
-<main class="w-full max-w-md bg-white rounded-3xl p-6 shadow-2xl border-4 border-indigo-200">
-  <div class="text-center"><div class="text-5xl mb-2">🎮📱</div><h1 class="text-2xl font-black text-indigo-700">ZIEZAA CONTROLLER</h1><p class="text-sm text-slate-500 mt-1">Controller HP Ular Tangga Ziezaa</p></div>
-  <section id="join-panel" class="mt-6 space-y-4"><label class="block text-sm font-bold text-slate-700">Kode room<input id="room-input" maxlength="6" class="mt-1 w-full p-3 rounded-xl border-2 border-slate-200 uppercase tracking-widest text-center text-xl font-black" placeholder="ABC123"></label><label class="block text-sm font-bold text-slate-700">Nama pemain<input id="name-input" maxlength="12" class="mt-1 w-full p-3 rounded-xl border-2 border-slate-200" placeholder="Nama kamu"></label><button id="join-btn" class="w-full p-4 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white font-black shadow-lg">GABUNG ROOM</button></section>
-  <section id="connected-panel" class="hidden mt-6"><div id="connection-status" class="p-3 rounded-xl bg-emerald-50 border border-emerald-200 text-emerald-700 font-bold text-center">Terhubung!</div><div class="mt-4 bg-slate-50 p-4 rounded-2xl text-center"><div class="text-xs text-slate-500 font-bold">KODE ROOM</div><div id="joined-room" class="text-2xl font-black tracking-widest text-indigo-700"></div><div id="game-status" class="mt-3 text-sm text-slate-600">Kamu sudah masuk lobby. Tunggu host memulai permainan.</div></div><div class="mt-4 text-sm text-slate-500 text-center">Controller untuk dadu dan jawaban akan aktif setelah tahap lobby ini berhasil diuji.</div></section>
-  <p id="error" class="hidden mt-4 p-3 rounded-xl bg-rose-50 border border-rose-200 text-rose-700 text-sm font-bold"></p><p class="mt-5 text-[11px] leading-relaxed text-slate-400 text-center">Pastikan HP dan layar utama memakai tautan website yang sama. Koneksi internet diperlukan.</p>
-</main>
-<script type="module">
-import { initializeApp } from "https://www.gstatic.com/firebasejs/11.10.0/firebase-app.js";
-import { getAuth, signInAnonymously } from "https://www.gstatic.com/firebasejs/11.10.0/firebase-auth.js";
-import { getDatabase, ref, set, onValue, onDisconnect, remove, runTransaction } from "https://www.gstatic.com/firebasejs/11.10.0/firebase-database.js";
-import { firebaseConfig } from "./firebase-config.js";
-const $=id=>document.getElementById(id); const params=new URLSearchParams(location.search); const initialRoom=(params.get('room')||'').toUpperCase(); if(initialRoom) $('room-input').value=initialRoom;
-const MAX_PLAYERS=4; let roomListener=null, joinedPlayerRef=null, connectedUid=null;
-function error(msg){$('error').textContent=msg;$('error').classList.remove('hidden');}
-function isConfigured(){return Boolean(firebaseConfig?.apiKey&&!firebaseConfig.apiKey.includes('GANTI_')&&firebaseConfig?.projectId&&!firebaseConfig.projectId.includes('GANTI_')&&firebaseConfig?.databaseURL&&!firebaseConfig.databaseURL.includes('GANTI_'));}
-$('room-input').addEventListener('input',()=>{$('room-input').value=$('room-input').value.toUpperCase().replace(/[^A-Z0-9]/g,'').slice(0,6);});
-$('name-input').addEventListener('input',()=>{$('name-input').value=$('name-input').value.replace(/[<>]/g,'').slice(0,12);});
-$('join-btn').addEventListener('click', async()=>{
-  $('error').classList.add('hidden'); const room=$('room-input').value.trim().toUpperCase(); const name=$('name-input').value.trim().replace(/\s+/g,' ');
-  if(!/^[A-Z0-9]{6}$/.test(room)){error('Kode room harus 6 karakter. Scan QR lagi atau masukkan kodenya.');return;}
-  if(!name){error('Isi nama pemain terlebih dahulu.');return;}
-  if(!isConfigured()){error('Firebase belum disetel. Admin game harus mengisi firebase-config.js.');return;}
-  $('join-btn').disabled=true; $('join-btn').textContent='MENGHUBUNGKAN...';
-  try{
-    const app=initializeApp(firebaseConfig); const auth=getAuth(app);
-    const user=auth.currentUser || (await signInAnonymously(auth)).user; connectedUid=user.uid;
-    const db=getDatabase(app); const roomRef=ref(db,`rooms/${room}`);
-    const roomSnap=await new Promise((resolve,reject)=>{
-      let done=false; const unsub=onValue(roomRef,s=>{if(done)return;done=true;unsub();resolve(s);},e=>{if(done)return;done=true;reject(e);});
+
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="theme-color" content="#10251d">
+  <title>Controller Pemain | Ziezaverse</title>
+
+  <style>
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      margin: 0;
+      min-height: 100vh;
+      padding: 24px 16px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background: #10251d;
+      color: #f5f5e9;
+      font-family: Arial, Helvetica, sans-serif;
+    }
+
+    .container {
+      width: 100%;
+      max-width: 440px;
+      padding: 25px;
+      border: 1px solid #42604d;
+      border-radius: 22px;
+      background: #1b3428;
+      box-shadow: 0 15px 45px #0005;
+    }
+
+    .brand {
+      margin: 0 0 8px;
+      color: #b9e6a5;
+      font-size: 13px;
+      font-weight: bold;
+      letter-spacing: 3px;
+      text-align: center;
+    }
+
+    h1 {
+      margin: 0 0 10px;
+      font-size: 27px;
+      text-align: center;
+    }
+
+    .description {
+      margin: 0 0 25px;
+      color: #c8d8cb;
+      font-size: 14px;
+      line-height: 1.6;
+      text-align: center;
+    }
+
+    label {
+      display: block;
+      margin: 16px 0 8px;
+      font-size: 13px;
+      font-weight: bold;
+    }
+
+    input {
+      width: 100%;
+      padding: 14px;
+      border: 1px solid #587563;
+      border-radius: 11px;
+      outline: none;
+      background: #10251d;
+      color: white;
+      font-size: 16px;
+    }
+
+    input:focus {
+      border-color: #b9e6a5;
+    }
+
+    button {
+      width: 100%;
+      margin-top: 20px;
+      padding: 15px;
+      border: none;
+      border-radius: 11px;
+      background: #b9e6a5;
+      color: #10251d;
+      font-size: 15px;
+      font-weight: bold;
+      cursor: pointer;
+    }
+
+    button:disabled {
+      cursor: wait;
+      opacity: 0.65;
+    }
+
+    .hidden {
+      display: none !important;
+    }
+
+    .notice {
+      margin-top: 16px;
+      padding: 13px;
+      border: 1px solid #42604d;
+      border-radius: 11px;
+      background: #10251d;
+      color: #dbe8dc;
+      font-size: 13px;
+      line-height: 1.6;
+      overflow-wrap: anywhere;
+    }
+
+    .error {
+      border-color: #b85c5c;
+      background: #3a2020;
+      color: #ffd5d5;
+    }
+
+    .room-code {
+      margin: 12px 0;
+      color: #b9e6a5;
+      font-size: 32px;
+      font-weight: bold;
+      letter-spacing: 5px;
+      text-align: center;
+    }
+
+    .small {
+      color: #a9c0ad;
+      font-size: 12px;
+      line-height: 1.6;
+    }
+  </style>
+</head>
+
+<body>
+  <main class="container">
+    <p class="brand">ZIEZAVERSE</p>
+    <h1>Controller Pemain</h1>
+    <p class="description">
+      Masukkan nama dan kode room untuk bergabung ke permainan Ular Tangga.
+    </p>
+
+    <section id="join-panel">
+      <label for="name-input">Nama pemain</label>
+      <input
+        id="name-input"
+        type="text"
+        maxlength="12"
+        placeholder="Masukkan nama kamu"
+        autocomplete="nickname"
+      >
+
+      <label for="room-input">Kode room</label>
+      <input
+        id="room-input"
+        type="text"
+        maxlength="6"
+        placeholder="Contoh: 4V6SPB"
+        autocomplete="off"
+        autocapitalize="characters"
+      >
+
+      <button id="join-btn" type="button">
+        GABUNG ROOM
+      </button>
+
+      <div id="error" class="notice error hidden" role="alert"></div>
+    </section>
+
+    <section id="connected-panel" class="hidden">
+      <div class="notice">
+        <strong>Status koneksi</strong>
+        <p id="connection-status">Menghubungkan...</p>
+      </div>
+
+      <p class="small">Kode room kamu:</p>
+      <div id="joined-room" class="room-code"></div>
+
+      <div class="notice">
+        <strong>Status permainan</strong>
+        <p id="game-status">
+          Menunggu host memulai permainan.
+        </p>
+      </div>
+
+      <p class="small">
+        Biarkan halaman ini tetap terbuka selama bermain.
+      </p>
+    </section>
+
+    <p class="small" style="text-align:center; margin-top:24px;">
+      Ziezaverse · Ular Tangga Multiplayer
+    </p>
+  </main>
+
+  <script type="module">
+    import { initializeApp, getApp, getApps }
+      from "https://www.gstatic.com/firebasejs/11.10.0/firebase-app.js";
+
+    import {
+      getAuth,
+      signInAnonymously
+    } from "https://www.gstatic.com/firebasejs/11.10.0/firebase-auth.js";
+
+    import {
+      getDatabase,
+      ref,
+      get,
+      onValue,
+      onDisconnect,
+      remove,
+      runTransaction
+    } from "https://www.gstatic.com/firebasejs/11.10.0/firebase-database.js";
+
+    import { firebaseConfig } from "./firebase-config.js";
+
+    const $ = (id) => document.getElementById(id);
+
+    const params = new URLSearchParams(window.location.search);
+    const initialRoom = (params.get("room") || "")
+      .toUpperCase()
+      .replace(/[^A-Z0-9]/g, "")
+      .slice(0, 6);
+
+    if (initialRoom) {
+      $("room-input").value = initialRoom;
+    }
+
+    const MAX_PLAYERS = 4;
+
+    let roomListener = null;
+    let joinedPlayerRef = null;
+    let connectedUid = null;
+    let joining = false;
+
+    function showError(message) {
+      $("error").textContent = message;
+      $("error").classList.remove("hidden");
+    }
+
+    function hideError() {
+      $("error").textContent = "";
+      $("error").classList.add("hidden");
+    }
+
+    function isConfigured() {
+      return Boolean(
+        firebaseConfig &&
+        firebaseConfig.apiKey &&
+        !firebaseConfig.apiKey.includes("GANTI_") &&
+        firebaseConfig.projectId &&
+        !firebaseConfig.projectId.includes("GANTI_") &&
+        firebaseConfig.databaseURL &&
+        !firebaseConfig.databaseURL.includes("GANTI_")
+      );
+    }
+
+    $("room-input").addEventListener("input", () => {
+      $("room-input").value = $("room-input").value
+        .toUpperCase()
+        .replace(/[^A-Z0-9]/g, "")
+        .slice(0, 6);
     });
-    if(!roomSnap.exists()) throw new Error('Room tidak ditemukan. Minta host membuat room baru.');
-    const roomData=roomSnap.val()||{};
-    if(roomData.status!=='lobby') throw new Error('Room sudah dimulai atau ditutup. Minta host membuat room baru.');
-    joinedPlayerRef=ref(db,`rooms/${room}/players/${user.uid}`);
-    // Daftarkan pembersihan koneksi terlebih dahulu agar pemain tidak tertinggal jika HP putus.
-    await onDisconnect(joinedPlayerRef).remove();
-    let joinFailure='';
-    // Room status + roster diperbarui dalam satu transaksi untuk menghindari masuk saat host mulai game.
-    const tx=await runTransaction(roomRef,current=>{
-      if(!current){joinFailure='Room tidak ditemukan. Minta host membuat room baru.';return;}
-      if(current.status!=='lobby'){joinFailure='Room sudah dimulai atau ditutup. Minta host membuat room baru.';return;}
-      const players=current.players&&typeof current.players==='object'?current.players:{};
-      const existing=players[user.uid];
-      const active=Object.entries(players).filter(([uid,p])=>uid!==user.uid&&p&&p.name);
-      if(!existing&&active.length>=MAX_PLAYERS){joinFailure='Room sudah penuh (maksimal '+MAX_PLAYERS+' pemain).';return;}
-      const duplicate=Object.entries(players).some(([uid,p])=>uid!==user.uid&&p&&String(p.name||'').trim().toLocaleLowerCase()===name.toLocaleLowerCase());
-      if(duplicate){joinFailure='Nama itu sudah dipakai di room ini. Coba nama lain.';return;}
-      return {...current,players:{...players,[user.uid]:{name,joinedAt:existing?.joinedAt||Date.now(),connected:true}}};
-    },{applyLocally:false});
-    if(!tx.committed){await remove(joinedPlayerRef).catch(()=>{});throw new Error(joinFailure||'Gagal bergabung. Coba lagi.');}
-    $('join-panel').classList.add('hidden'); $('connected-panel').classList.remove('hidden'); $('joined-room').textContent=room;
-    $('connection-status').textContent='Terhubung ke room';
-    if(roomListener) roomListener();
-    roomListener=onValue(roomRef,s=>{
-      const data=s.val();
-      if(!data){$('connection-status').textContent='Room tidak ditemukan atau telah dihapus.';$('connection-status').className='p-3 rounded-xl bg-rose-50 border border-rose-200 text-rose-700 font-bold text-center';$('game-status').textContent='Minta host membuat room baru.';return;}
-      if(data.status==='playing') $('game-status').textContent='Game dimulai! Controller akan mengikuti tahap permainan yang tersedia.';
-      else if(data.status==='closed') $('game-status').textContent='Host telah menutup room.';
-      else $('game-status').textContent='Berhasil bergabung. Tunggu host memulai permainan.';
-    },e=>{console.error(e);$('connection-status').textContent='Koneksi bermasalah';$('game-status').textContent='Periksa internet. Jangan tekan gabung berulang kali; coba muat ulang jika tetap terputus.';});
-  }catch(e){
-    console.error(e);error(e.message||'Gagal bergabung. Periksa internet dan konfigurasi Firebase.');
-    $('join-btn').disabled=false;$('join-btn').textContent='COBA LAGI';
-  }
-});
-window.addEventListener('pagehide',()=>{if(roomListener)roomListener();});
-</script></body></html>
+
+    $("name-input").addEventListener("input", () => {
+      $("name-input").value = $("name-input").value
+        .replace(/[<>]/g, "")
+        .slice(0, 12);
+    });
+
+    $("join-btn").addEventListener("click", async () => {
+      if (joining) return;
+
+      hideError();
+
+      const room = $("room-input").value.trim().toUpperCase();
+      const name = $("name-input").value.trim().replace(/\s+/g, " ");
+
+      if (!/^[A-Z0-9]{6}$/.test(room)) {
+        showError(
+          "Kode room harus terdiri dari 6 huruf atau angka. Scan QR room lagi."
+        );
+        return;
+      }
+
+      if (!name) {
+        showError("Isi nama pemain terlebih dahulu.");
+        return;
+      }
+
+      if (!isConfigured()) {
+        showError(
+          "Konfigurasi Firebase belum lengkap. Periksa firebase-config.js."
+        );
+        return;
+      }
+
+      joining = true;
+      $("join-btn").disabled = true;
+      $("join-btn").textContent = "MENGHUBUNGKAN...";
+
+      let playerRefForCleanup = null;
+
+      try {
+        /*
+         * Gunakan aplikasi Firebase yang sudah ada jika tersedia.
+         * Ini mencegah error duplicate-app saat mencoba kembali.
+         */
+        const app = getApps().length
+          ? getApp()
+          : initializeApp(firebaseConfig);
+
+        const auth = getAuth(app);
+
+        const credential = auth.currentUser
+          ? { user: auth.currentUser }
+          : await signInAnonymously(auth);
+
+        const user = credential.user;
+        connectedUid = user.uid;
+
+        const db = getDatabase(app);
+        const roomRef = ref(db, `rooms/${room}`);
+
+        /*
+         * Catat informasi diagnostik di Console browser.
+         */
+        console.log("ZIEZAVERSE DIAGNOSTIK", {
+          room,
+          projectId: firebaseConfig.projectId,
+          databaseURL: firebaseConfig.databaseURL,
+          roomPath: `rooms/${room}`,
+          userUid: user.uid
+        });
+
+        /*
+         * Baca room dan tampilkan error asli jika akses database gagal.
+         */
+        const roomSnap = await get(roomRef);
+
+        console.log("HASIL PEMERIKSAAN ROOM", {
+          room,
+          exists: roomSnap.exists(),
+          data: roomSnap.exists() ? roomSnap.val() : null,
+          databaseURL: firebaseConfig.databaseURL,
+          roomReference: roomSnap.ref.toString()
+        });
+
+        if (!roomSnap.exists()) {
+          console.error("ROOM SNAPSHOT KOSONG", {
+            room,
+            databaseURL: firebaseConfig.databaseURL,
+            projectId: firebaseConfig.projectId,
+            roomPath: `rooms/${room}`
+          });
+
+          throw new Error(
+            "Room tidak terbaca pada database yang digunakan controller. " +
+            "Pastikan host membuat room di database Firebase yang sama. " +
+            "Buka Console untuk melihat detail pemeriksaan."
+          );
+        }
+
+        const roomData = roomSnap.val() || {};
+
+        if (roomData.status !== "lobby") {
+          throw new Error(
+            "Room sudah dimulai atau ditutup. Minta host membuat room baru."
+          );
+        }
+
+        playerRefForCleanup = ref(
+          db,
+          `rooms/${room}/players/${user.uid}`
+        );
+
+        /*
+         * Batalkan pendaftaran onDisconnect lama bila ada.
+         * Jika koneksi terputus, pemain akan dihapus otomatis.
+         */
+        await onDisconnect(playerRefForCleanup).remove();
+
+        let joinFailure = "";
+
+        const tx = await runTransaction(
+          roomRef,
+          (current) => {
+            if (!current) {
+              joinFailure = "Room tidak ditemukan saat proses bergabung.";
+              return;
+            }
+
+            if (current.status !== "lobby") {
+              joinFailure = "Room sudah dimulai atau ditutup.";
+              return;
+            }
+
+            const players =
+              current.players && typeof current.players === "object"
+                ? current.players
+                : {};
+
+            const existing = players[user.uid];
+
+            const activePlayers = Object.entries(players).filter(
+              ([uid, player]) =>
+                uid !== user.uid && player && player.name
+            );
+
+            if (!existing && activePlayers.length >= MAX_PLAYERS) {
+              joinFailure = "Room sudah penuh (maksimal 4 pemain).";
+              return;
+            }
+
+            const duplicateName = Object.entries(players).some(
+              ([uid, player]) =>
+                uid !== user.uid &&
+                player &&
+                String(player.name || "").trim().toLowerCase() ===
+                  name.toLowerCase()
+            );
+
+            if (duplicateName) {
+              joinFailure =
+                "Nama itu sudah dipakai di room ini. Coba nama lain.";
+              return;
+            }
+
+            return {
+              ...current,
+              players: {
+                ...players,
+                [user.uid]: {
+                  name,
+                  joinedAt: existing?.joinedAt || Date.now(),
+                  connected: true
+                }
+              }
+            };
+          },
+          { applyLocally: false }
+        );
+
+        if (!tx.committed) {
+          throw new Error(
+            joinFailure || "Gagal bergabung ke room. Coba lagi."
+          );
+        }
+
+        joinedPlayerRef = playerRefForCleanup;
+
+        $("join-panel").classList.add("hidden");
+        $("connected-panel").classList.remove("hidden");
+
+        $("joined-room").textContent = room;
+        $("connection-status").textContent = "Terhubung ke room";
+        $("connection-status").className = "";
+
+        if (roomListener) {
+          roomListener();
+        }
+
+        roomListener = onValue(
+          roomRef,
+          (snapshot) => {
+            const data = snapshot.val();
+
+            if (!data) {
+              $("connection-status").textContent =
+                "Room tidak ditemukan atau telah dihapus.";
+
+              $("game-status").textContent =
+                "Minta host membuat room baru.";
+
+              return;
+            }
+
+            $("connection-status").textContent = "Terhubung ke room";
+
+            if (data.status === "playing") {
+              $("game-status").textContent =
+                "Game dimulai! Controller dadu dan jawaban akan aktif setelah fitur permainan dihubungkan.";
+            } else if (data.status === "closed") {
+              $("game-status").textContent =
+                "Host telah menutup room.";
+            } else {
+              $("game-status").textContent =
+                "Berhasil bergabung. Tunggu host memulai permainan.";
+            }
+          },
+          (error) => {
+            console.error("GAGAL MEMANTAU ROOM:", error);
+
+            $("connection-status").textContent =
+              "Koneksi bermasalah";
+
+            $("game-status").textContent =
+              "Database tidak dapat dipantau. Periksa Console browser.";
+          }
+        );
+
+        console.log("BERHASIL BERGABUNG", {
+          room,
+          uid: connectedUid
+        });
+
+      } catch (error) {
+        console.error("KESALAHAN CONTROLLER:", error);
+
+        if (playerRefForCleanup) {
+          await remove(playerRefForCleanup).catch((cleanupError) => {
+            console.warn("Pembersihan pemain gagal:", cleanupError);
+          });
+        }
+
+        const message = String(error?.message || "");
+
+        if (
+          error?.code === "PERMISSION_DENIED" ||
+          error?.code === "permission-denied"
+        ) {
+          showError(
+            "Akses database ditolak. Periksa Rules Realtime Database " +
+            "dan pastikan pengguna sudah login anonim."
+          );
+        } else if (
+          error?.code === "auth/operation-not-allowed"
+        ) {
+          showError(
+            "Login anonim belum aktif. Aktifkan Anonymous pada Firebase Authentication."
+          );
+        } else if (
+          error?.code === "auth/network-request-failed"
+        ) {
+          showError(
+            "Koneksi internet bermasalah. Periksa internet lalu coba lagi."
+          );
+        } else {
+          showError(
+            message || "Gagal bergabung. Periksa koneksi dan konfigurasi Firebase."
+          );
+        }
+
+      } finally {
+        joining = false;
+        $("join-btn").disabled = false;
+        $("join-btn").textContent = "COBA LAGI";
+      }
+    });
+
+    window.addEventListener("pagehide", () => {
+      if (roomListener) {
+        roomListener();
+      }
+    });
+  </script>
+</body>
+</html>
